@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 )
@@ -10,6 +11,8 @@ type Config struct {
 	Db_url      string `json:"db_url"`
 	CurrentUser string `json:"current_user_name"`
 }
+
+const configFileName = ".gatorconfig.json"
 
 func Read() Config {
 	homeDir, err := os.UserHomeDir()
@@ -33,10 +36,9 @@ func Read() Config {
 	return config
 }
 
-func (config *Config) SetUser(currentUser string) {
+func (config *Config) SetUser(currentUser string) error {
 	if currentUser == "" {
-		fmt.Println("Need a user name")
-		return
+		return errors.New("Need 1 arguement (username)")
 	} else {
 		config.CurrentUser = currentUser
 	}
@@ -44,20 +46,20 @@ func (config *Config) SetUser(currentUser string) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Printf("Error retreiving home directory: %v\n", err)
-		return
+		return err
 	}
 
-	configFile := homeDir + `/` + `.gatorconfig.json`
+	configFile := homeDir + `/` + configFileName
 	jsonData, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		fmt.Println("Error marshaling data:", err)
-		return
+		return err
 	}
 
 	err = os.WriteFile(configFile, jsonData, 0644)
 	if err != nil {
 		fmt.Println("Error writing file:", err)
-		return
+		return err
 	}
-	return
+	return errors.New("")
 }
