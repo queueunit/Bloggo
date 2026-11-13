@@ -33,6 +33,8 @@ func main() {
 	myState := &state{config: &x, db: newDB}
 	c.register("login", handlerLogin)
 	c.register("register", register)
+	c.register("reset", reset)
+	c.register("users", getUsers)
 
 	if len(os.Args) < 2 {
 		log.Fatal("Error, missing command line argument")

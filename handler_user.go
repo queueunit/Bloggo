@@ -71,3 +71,35 @@ func register(s *state, cmd command) error {
 
 	return errors.New("")
 }
+
+func reset(s *state, cmd command) error {
+
+	contextBkg := context.Background()
+	err := s.db.Reset(contextBkg)
+	if err != nil {
+		log.Fatal("Could not reset table users")
+	}
+
+	fmt.Println("Table 'users' reset")
+	return errors.New("")
+}
+
+func getUsers(s *state, cmd command) error {
+
+	contextBkg := context.Background()
+
+	users, err := s.db.GetUsers(contextBkg)
+	if err != nil {
+		log.Fatal("Could not get column name from user table")
+	}
+
+	for _, x := range users {
+		if x == s.config.CurrentUser {
+			fmt.Printf("* %v (current)\n", x)
+		} else {
+			fmt.Printf("* %v\n", x)
+		}
+	}
+
+	return errors.New("")
+}

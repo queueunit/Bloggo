@@ -32,6 +32,5 @@ func (c *commands) register(name string, f func(*state, command) error) {
 		return
 	} else {
 		c.available[name] = f
-		return
 	}
 }
