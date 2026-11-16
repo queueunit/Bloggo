@@ -36,6 +36,7 @@ func main() {
 	c.register("reset", reset)
 	c.register("users", getUsers)
 	c.register("agg", agg)
+	c.register("addfeed", addFeed)
 
 	if len(os.Args) < 2 {
 		log.Fatal("Error, missing command line argument")
