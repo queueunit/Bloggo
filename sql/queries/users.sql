@@ -17,3 +17,6 @@ DELETE FROM users;
 
 -- name: GetUsers :many
 SELECT name FROM users;
+
+-- name: ListFeeds :many
+SELECT f.name, f.url, u.name FROM feeds f JOIN users u ON f.user_id = u.id;

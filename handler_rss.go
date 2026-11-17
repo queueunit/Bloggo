@@ -78,3 +78,23 @@ func agg(s *state, cmd command) error {
 	return nil
 
 }
+
+func showFeeds(s *state, cmd command) error {
+
+	ctx := context.Background()
+
+	feeds, err := s.db.ListFeeds(ctx)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal("Could not fetch feeds in database")
+	}
+
+	fmt.Println("---------- Feeds ----------")
+	for _, f := range feeds {
+		fmt.Println(f.Name)
+		fmt.Println(f.Url)
+		fmt.Println(f.Name_2)
+	}
+
+	return nil
+}
