@@ -104,14 +104,49 @@ func getUsers(s *state, cmd command) error {
 	return errors.New("")
 }
 
-func addFeed(s *state, cmd command) error {
+//func addFeed(s *state, cmd command) error {
+//
+//	current := s.config.CurrentUser
+//	ctx := context.Background()
+//	user, err := s.db.GetUser(ctx, current)
+//	if err != nil {
+//		log.Fatal("Could not fetch info for user: %v", current)
+//	}
+//
+//	feed, err := s.db.CreateFeed(ctx, database.CreateFeedParams{
+//		ID:        uuid.New(),
+//		CreatedAt: time.Now(),
+//		UpdatedAt: time.Now(),
+//		Name:      cmd.arguments[0],
+//		Url:       cmd.arguments[1],
+//		UserID:    user.ID,
+//	})
+//	if err != nil {
+//		log.Fatal("Could not add feed %v", err)
+//	}
+//
+//	// Create a feed follow immediately after the user creates a feed
+//	var feedFollow = database.CreateFeedFollowParams{
+//		ID:        uuid.New(),
+//		CreatedAt: time.Now(),
+//		UpdatedAt: time.Now(),
+//		UserID:    feed.UserID,
+//		FeedID:    feed.ID,
+//	}
+//
+//	_, err = s.db.CreateFeedFollow(ctx, feedFollow)
+//	if err != nil {
+//		log.Fatal("Could not add corresponding feedFollow")
+//	}
+//
+//	fmt.Println(feed.Name)
+//	fmt.Println(feed.Url)
+//	return errors.New("")
+//}
 
-	current := s.config.CurrentUser
+func addFeed(s *state, cmd command, user database.User) error {
+
 	ctx := context.Background()
-	user, err := s.db.GetUser(ctx, current)
-	if err != nil {
-		log.Fatal("Could not fetch info for user: %v", current)
-	}
 
 	feed, err := s.db.CreateFeed(ctx, database.CreateFeedParams{
 		ID:        uuid.New(),
