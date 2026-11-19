@@ -104,6 +104,7 @@ func getFollowsForUser(s *state, cmd command) error {
 		log.Fatal("Could not fetch follows for current user")
 	}
 
+	fmt.Printf("User %v Following:\n", user.Name)
 	for _, f := range userFollows {
 		fmt.Println(f.Blog)
 	}

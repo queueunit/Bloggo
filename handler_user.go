@@ -125,6 +125,20 @@ func addFeed(s *state, cmd command) error {
 		log.Fatal("Could not add feed %v", err)
 	}
 
+	// Create a feed follow immediately after the user creates a feed
+	var feedFollow = database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    feed.UserID,
+		FeedID:    feed.ID,
+	}
+
+	_, err = s.db.CreateFeedFollow(ctx, feedFollow)
+	if err != nil {
+		log.Fatal("Could not add corresponding feedFollow")
+	}
+
 	fmt.Println(feed.Name)
 	fmt.Println(feed.Url)
 	return errors.New("")
