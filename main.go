@@ -40,6 +40,7 @@ func main() {
 	c.register("feeds", showFeeds)
 	c.register("follow", middlewareLoggedIn(addFeedFollow))
 	c.register("following", middlewareLoggedIn(getFollowsForUser))
+	c.register("unfollow", middlewareLoggedIn(deleteFeedFollow))
 
 	if len(os.Args) < 2 {
 		log.Fatal("Error, missing command line argument")

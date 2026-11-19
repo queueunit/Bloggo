@@ -109,3 +109,23 @@ func getFollowsForUser(s *state, cmd command, user database.User) error {
 
 	return nil
 }
+
+func deleteFeedFollow(s *state, cmd command, user database.User) error {
+
+	if len(cmd.arguments) == 0 {
+		log.Fatal("unfollow command requires one argument (URL)")
+	}
+
+	ctx := context.Background()
+
+	feed, err := s.db.LookUpFeedByURL(ctx, cmd.arguments[0])
+	if err != nil {
+		log.Fatal("Could not fetch feed information")
+	}
+
+	fmt.Println("User ID:   %v", user.ID)
+	fmt.Println("Feed ID:   %v", feed.ID)
+	err = s.db.DeleteFeedFollow(ctx, database.DeleteFeedFollowParams{UserID: user.ID, UserID_2: feed.ID})
+
+	return nil
+}

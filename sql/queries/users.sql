@@ -51,3 +51,8 @@ SELECT u.name AS UserName, temp.name AS Blog
 FROM users u
 INNER JOIN idNameTemp temp
   ON temp.user_id = u.id;
+
+-- name: DeleteFeedFollow :exec
+DELETE
+FROM feed_follows
+WHERE (user_id, feed_id) IN (($1, $2));
