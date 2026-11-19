@@ -33,3 +33,21 @@ INNER JOIN users
   ON inserted_feed_follow.user_id = users.id
 INNER JOIN feeds
   ON inserted_feed_follow.user_id = feeds.user_id;
+
+-- name: LookUpFeedByURL :one
+SELECT id, name
+FROM feeds
+WHERE url = $1 LIMIT 1;
+
+-- name: GetFeedFollowsForUser :many
+WITH idNameTemp AS (
+    SELECT feed_follows.user_id, feeds.name
+    FROM feed_follows
+    INNER JOIN feeds
+      ON feeds.id = feed_follows.feed_id
+    WHERE feed_follows.user_id = $1
+)
+SELECT u.name AS UserName, temp.name AS Blog
+FROM users u
+INNER JOIN idNameTemp temp
+  ON temp.user_id = u.id;

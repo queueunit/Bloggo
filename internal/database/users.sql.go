@@ -131,6 +131,48 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getFeedFollowsForUser = `-- name: GetFeedFollowsForUser :many
+WITH idNameTemp AS (
+    SELECT feed_follows.user_id, feeds.name
+    FROM feed_follows
+    INNER JOIN feeds
+      ON feeds.id = feed_follows.feed_id
+    WHERE feed_follows.user_id = $1
+)
+SELECT u.name AS UserName, temp.name AS Blog
+FROM users u
+INNER JOIN idNameTemp temp
+  ON temp.user_id = u.id
+`
+
+type GetFeedFollowsForUserRow struct {
+	Username string
+	Blog     string
+}
+
+func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) ([]GetFeedFollowsForUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedFollowsForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFeedFollowsForUserRow
+	for rows.Next() {
+		var i GetFeedFollowsForUserRow
+		if err := rows.Scan(&i.Username, &i.Blog); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, created_at, updated_at, name FROM users
 WHERE name = $1 LIMIT 1
@@ -206,6 +248,24 @@ func (q *Queries) ListFeeds(ctx context.Context) ([]ListFeedsRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const lookUpFeedByURL = `-- name: LookUpFeedByURL :one
+SELECT id, name
+FROM feeds
+WHERE url = $1 LIMIT 1
+`
+
+type LookUpFeedByURLRow struct {
+	ID   uuid.UUID
+	Name string
+}
+
+func (q *Queries) LookUpFeedByURL(ctx context.Context, url string) (LookUpFeedByURLRow, error) {
+	row := q.db.QueryRowContext(ctx, lookUpFeedByURL, url)
+	var i LookUpFeedByURLRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
 }
 
 const reset = `-- name: Reset :exec
