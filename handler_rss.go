@@ -8,6 +8,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/queueunit/Bloggo/internal/database"
 )
 
 type RSSFeed struct {
@@ -61,21 +64,15 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 
 }
 
-func agg(s *state, cmd command) error {
+func agg(s *state, cmd command, time_between_reqs string) {
 
-	const rssURL = "https://www.wagslane.dev/index.xml"
-	ctx := context.Background()
+	interval, _ := time.ParseDuration(time_between_reqs)
+	ticker := time.NewTicker(interval)
 
-	feed, err := fetchFeed(ctx, rssURL)
-	if err != nil {
-		log.Fatal("Could not obtain rss feed")
+	fmt.Println("----- Collecting feeds every %v", interval)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s, cmd)
 	}
-
-	fmt.Println(html.UnescapeString(feed.Channel.Title))
-	fmt.Println(html.UnescapeString(feed.Channel.Link))
-	fmt.Println(html.UnescapeString(feed.Channel.Description))
-
-	return nil
 
 }
 
@@ -94,6 +91,34 @@ func showFeeds(s *state, cmd command) error {
 		fmt.Println(f.Name)
 		fmt.Println(f.Url)
 		fmt.Println(f.Name_2)
+	}
+
+	return nil
+}
+
+func scrapeFeeds(s *state, cmd command) error {
+
+	ctx := context.Background()
+	next, err := s.db.GetNextFeedToFetch(ctx)
+	if err != nil {
+		log.Fatal("Could not fetch feed to update")
+	}
+
+	err = s.db.MarkFeedFetched(ctx, database.MarkFeedFetchedParams{
+		ID:        next.ID,
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		log.Fatal("Could not mark feed as updated")
+	}
+
+	feed, err := fetchFeed(ctx, next.Url)
+	if err != nil {
+		log.Fatal("Could not fetch requested feed from %v", next.Url)
+	}
+
+	for _, x := range feed.Channel.Item {
+		fmt.Println(html.UnescapeString(x.Title))
 	}
 
 	return nil

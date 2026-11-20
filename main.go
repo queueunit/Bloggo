@@ -35,7 +35,6 @@ func main() {
 	c.register("register", register)
 	c.register("reset", reset)
 	c.register("users", getUsers)
-	c.register("agg", agg)
 	c.register("addfeed", middlewareLoggedIn(addFeed))
 	c.register("feeds", showFeeds)
 	c.register("follow", middlewareLoggedIn(addFeedFollow))
@@ -52,6 +51,10 @@ func main() {
 	commandStruct := command{
 		name:      cliCommand,
 		arguments: cliArguments,
+	}
+
+	if os.Args[1] == "agg" {
+		agg(myState, commandStruct, "30s")
 	}
 
 	c.run(myState, commandStruct)
