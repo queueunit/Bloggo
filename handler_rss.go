@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
-	"html"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/queueunit/Bloggo/internal/database"
 )
@@ -96,30 +99,118 @@ func showFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func scrapeFeeds(s *state, cmd command) error {
+//func scrapeFeeds(s *state, cmd command) error {
+//
+//	ctx := context.Background()
+//	next, err := s.db.GetNextFeedToFetch(ctx)
+//	if err != nil {
+//		log.Fatal("Could not fetch feed to update")
+//	}
+//
+//	err = s.db.MarkFeedFetched(ctx, database.MarkFeedFetchedParams{
+//		ID:        next.ID,
+//		UpdatedAt: time.Now(),
+//	})
+//	if err != nil {
+//		log.Fatal("Could not mark feed as updated")
+//	}
+//
+//	feed, err := fetchFeed(ctx, next.Url)
+//	if err != nil {
+//		log.Fatal("Could not fetch requested feed from %v", next.Url)
+//	}
+//
+//	for _, x := range feed.Channel.Item {
+//		fmt.Println(html.UnescapeString(x.Title))
+//	}
+//
+//	return nil
+//}
 
-	ctx := context.Background()
-	next, err := s.db.GetNextFeedToFetch(ctx)
+func scrapeFeeds(s *state, cmd command) error {
+	// get the next feed to fetch from the database
+	feed, err := s.db.GetNextFeedToFetch(context.Background())
 	if err != nil {
-		log.Fatal("Could not fetch feed to update")
+		return err
 	}
 
-	err = s.db.MarkFeedFetched(ctx, database.MarkFeedFetchedParams{
-		ID:        next.ID,
+	// mark it as fetched in database
+	err = s.db.MarkFeedFetched(context.Background(), database.MarkFeedFetchedParams{
+		ID:        feed.ID,
 		UpdatedAt: time.Now(),
 	})
 	if err != nil {
-		log.Fatal("Could not mark feed as updated")
+		return err
 	}
 
-	feed, err := fetchFeed(ctx, next.Url)
+	// fetch the rss feed from url
+	rssFeed, err := fetchFeed(context.Background(), feed.Url)
 	if err != nil {
-		log.Fatal("Could not fetch requested feed from %v", next.Url)
+		return err
 	}
 
-	for _, x := range feed.Channel.Item {
-		fmt.Println(html.UnescapeString(x.Title))
+	for _, item := range rssFeed.Channel.Item {
+		// parse published_at (2 formats)
+		publishedAt := sql.NullTime{}
+		if t, err := time.Parse(time.RFC1123Z, item.PubDate); err == nil {
+			publishedAt = sql.NullTime{
+				Time:  t,
+				Valid: true,
+			}
+		}
+		if t, err := time.Parse(time.RFC1123, item.PubDate); err == nil {
+			publishedAt = sql.NullTime{
+				Time:  t,
+				Valid: true,
+			}
+		}
+
+		description := sql.NullString{
+			String: item.Description,
+			Valid:  item.Description != "",
+		}
+
+		_, err := s.db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
+			Title:       toNullString(item.Title),
+			Url:         item.Link,
+			Description: description,
+			PublishedAt: publishedAt,
+			FeedID:      feed.ID,
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key") {
+				continue
+			}
+			fmt.Printf("Error saving post: %v\n", err)
+		}
 	}
 
 	return nil
+
+}
+
+func toNullString(s string) sql.NullString {
+	return sql.NullString{
+		String: s,
+		Valid:  s != "", // Change to 'true' if empty strings shouldn't be NULL
+	}
+}
+
+func toNullTime(s string, layout string) (sql.NullTime, error) {
+	if s == "" {
+		return sql.NullTime{Valid: false}, nil
+	}
+
+	t, err := time.Parse(layout, s)
+	if err != nil {
+		return sql.NullTime{}, err
+	}
+
+	return sql.NullTime{
+		Time:  t,
+		Valid: true,
+	}, nil
 }

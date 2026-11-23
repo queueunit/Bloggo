@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -127,5 +128,35 @@ func deleteFeedFollow(s *state, cmd command, user database.User) error {
 	fmt.Println("Feed ID:   %v", feed.ID)
 	err = s.db.DeleteFeedFollow(ctx, database.DeleteFeedFollowParams{UserID: user.ID, UserID_2: feed.ID})
 
+	return nil
+}
+
+func Browse(s *state, cmd command) error {
+
+	ctx := context.Background()
+	user, err := s.db.GetUser(ctx, s.config.CurrentUser)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var defaultLimit int
+	if len(cmd.arguments) == 0 {
+		defaultLimit = 2
+	} else {
+		defaultLimit, err = strconv.Atoi(cmd.arguments[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	posts, err := s.db.GetPostsByUser(ctx, database.GetPostsByUserParams{
+		UserID: user.ID,
+		Limit:  int32(defaultLimit),
+	})
+
+	for _, x := range posts {
+		fmt.Println(x.Title.String)
+		fmt.Println(x.Description)
+	}
 	return nil
 }

@@ -8,6 +8,11 @@ INSERT INTO feeds(id, created_at, updated_at, name, url, user_id)
 VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
+-- name: CreatePost :one
+INSERT INTO posts(id, created_at, updated_at, title, url, description, published_at, feed_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING *;
+
 -- name: GetUser :one
 SELECT * FROM users
 WHERE name = $1 LIMIT 1;
@@ -51,6 +56,13 @@ SELECT u.name AS UserName, temp.name AS Blog
 FROM users u
 INNER JOIN idNameTemp temp
   ON temp.user_id = u.id;
+
+-- name: GetPostsByUser :many
+SELECT * from posts as p
+JOIN feed_follows as f ON p.feed_id = f.feed_id
+WHERE f.user_id = $1
+ORDER BY published_at DESC
+LIMIT $2;
 
 -- name: DeleteFeedFollow :exec
 DELETE
